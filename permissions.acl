@@ -1,0 +1,107 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+rule PatientCanCreateTheirRecord {
+  description: "Allow all patients to create their own records"
+  participant: "org.futurists.medchain.Patient"
+  operation: CREATE
+  resource: "org.futurists.medchain.CreateRecord"
+  action: ALLOW
+}
+
+rule PatientCanViewTheirOwnRecords {
+    description: "Allow all patients read access to all their records"
+    participant(p): "org.futurists.medchain.Patient"
+    operation: READ
+    resource(r): "org.futurists.medchain.MedicalRecord"//need to verify this
+    condition: (r.owner.getIdentifier() == p.getIdentifier())
+    action: ALLOW
+}
+
+//verify this
+rule DoctorCanCreateRecordForPatient {
+    description: "Allow all doctors to create record for their patients"
+    participant: "org.futurists.medchain.Doctor"
+    operation: CREATE
+    resource: "org.futurists.medchain.MedicalRecord"
+    action: ALLOW
+}
+
+rule OwnerHasFullAccessToTheirRecords {
+    description: "Allow all patients full access to their records"
+    participant(p): "org.futurists.medchain.Patient"
+    operation: ALL
+    resource(r): "org.futurists.medchain.MedicalRecord"
+    condition: (r.owner.getIdentifier() === p.getIdentifier())
+    action: ALLOW
+}
+
+rule AuthAccessTransaction {
+  description: "Allow all patients to submit authorize access transaction"
+  participant: "org.futurists.medchain.Patient"
+  operation: CREATE
+  resource: "org.futurists.medchain.AuthorizeAccess"
+  action: ALLOW
+}
+
+rule RevokeAccessTransaction {
+  description: "Allow all patients to submit revoke access transaction"
+  participant: "org.futurists.medchain.Patient"
+  operation: CREATE
+  resource: "org.futurists.medchain.RevokeAccess"
+  action: ALLOW
+}
+
+// rule AuthorizeAccessTransaction {
+//   description: "Allow all patients to submit authorize access transaction"
+//   participant: "org.futurists.medchain.Patient"
+//   operation: CREATE
+//   resource(res): "org.futurists.medchain.MedicalRecord"
+//   transaction(tx): "org.futurists.medchain.AuthorizeAccess"
+//   condition: (tx.asset.type() === res.asset.type())
+//   action: ALLOW
+// }
+
+rule PatientRecordConditionalReadAccess {
+  description: "Allow doctor to view patient's record only is access is granted"
+  participant(p): "org.futurists.medchain.Doctor"
+  operation: READ
+  resource(r): "org.futurists.medchain.MedicalRecord"
+  condition: (r.authorized && r.authorized.indexOf(p.getIdentifier()) > -1)
+  action: ALLOW
+}
+
+rule SystemACL {
+  description:  "System ACL to permit all access"
+  participant: "org.hyperledger.composer.system.Participant"
+  operation: ALL
+  resource: "org.hyperledger.composer.system.**"
+  action: ALLOW
+}
+
+rule NetworkAdminUser {
+    description: "Grant business network administrators full access to user resources"
+    participant: "org.hyperledger.composer.system.NetworkAdmin"
+    operation: ALL
+    resource: "**"
+    action: ALLOW
+}
+
+rule NetworkAdminSystem {
+    description: "Grant business network administrators full access to system resources"
+    participant: "org.hyperledger.composer.system.NetworkAdmin"
+    operation: ALL
+    resource: "org.hyperledger.composer.system.**"
+    action: ALLOW
+}
